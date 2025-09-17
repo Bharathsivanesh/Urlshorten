@@ -23,7 +23,7 @@ def store_url(request):
 def get_url(request):
     if request.method=="GET":
         try:
-            db=Urlshorten.objects.all().values("Short_url","Long_url","Created_at","id")
+            db=Urlshorten.objects.all().values("Short_url","Long_url","Created_at")
             data=list(db)
             if not data:
                 return JsonResponse({"Messahe":"Fields are Empty"},status=400)
@@ -32,13 +32,3 @@ def get_url(request):
         except Exception as e:
             return JsonResponse({"Message":"Something went wrong"},status=500)
     return JsonResponse({"Messahe":"Method not found"},status=405)
-
-@csrf_exempt
-def delete_url(request,id):
-    if request.method=="DELETE":
-        try:
-            db=Urlshorten.objects.get(id=id)
-            db.delete()
-            return JsonResponse({"Messahe":"URL Deleted"},status=200)
-        except Exception as e:
-            return JsonResponse({"Message":"Something went wrong"},status=500)
