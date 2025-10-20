@@ -1,44 +1,41 @@
-from django.http import JsonResponse
-import json
-
-from django.views.decorators.csrf import csrf_exempt
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import Urlshorten
+from .serializers import UrlShortenSerializer
+import requests
 
-@csrf_exempt
-def store_url(request):
-    if request.method=="POST":
+class UrlCreateView(APIView):
+    def post(self, request):
+        long_url = request.data.get("long")
+        if not long_url:
+            return Response({"message": "Field 'long' is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        tinyurl_api = "https://tinyurl.com/api-create.php"
+        response = requests.get(tinyurl_api, params={"url": long_url})
+        if response.status_code != 200:
+            return Response({"message": "Error creating short URL"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        short_url = response.text
+        db = Urlshorten.objects.create(Short_url=short_url, Long_url=long_url)
+        serializer = UrlShortenSerializer(db)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class UrlListView(APIView):
+    def get(self, request):
+        urls = Urlshorten.objects.all()
+        if not urls.exists():
+            return Response({"message": "No URLs found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UrlShortenSerializer(urls, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+
+class UrlDeleteView(APIView):
+    def delete(self, request, id):
         try:
-            load=json.loads(request.body)
-            short=load.get('short')
-            long=load.get('long')
-            if not short or not long:
-                return JsonResponse({"Messahe":"Fields are required"},status=400)
-            db=Urlshorten.objects.create(Short_url=short,Long_url=long)
-            return JsonResponse({"Message":"URL SUccefuuly inserted"},status=200)
-        except Exception as e:
-            return JsonResponse({"Message":"Something went wrong"},status=500)
-    return JsonResponse({"Messahe":"Method not found"},status=405)
-
-def get_url(request):
-    if request.method=="GET":
-        try:
-            db=Urlshorten.objects.all().values("Short_url","Long_url","Created_at","id")
-            data=list(db)
-            if not data:
-                return JsonResponse({"Messahe":"Fields are Empty"},status=400)
-            return JsonResponse({"data":data},status=200)
-
-        except Exception as e:
-            return JsonResponse({"Message":"Something went wrong"},status=500)
-    return JsonResponse({"Messahe":"Method not found"},status=405)
-
-@csrf_exempt
-def delete_url(request,id):
-    if request.method=="DELETE":
-        try:
-            db=Urlshorten.objects.get(id=id)
-            db.delete()
-            return JsonResponse({"Messahe":"URL Deleted"},status=200)
-        except Exception as e:
-            return JsonResponse({"Message":"Something went wrong"},status=500)
+            url = Urlshorten.objects.get(id=id)
+            url.delete()
+            return Response({"message": "URL Deleted"}, status=status.HTTP_200_OK)
+        except Urlshorten.DoesNotExist:
+            return Response({"message": "URL not found"}, status=status.HTTP_404_NOT_FOUND)

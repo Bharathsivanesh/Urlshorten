@@ -1,7 +1,8 @@
 from django.urls import path
-from . import views
-urlpatterns=[
-    path('post/',views.store_url),
-path('get/',views.get_url),
-    path('delete/<int:id>/',views.delete_url)
+from .views import UrlCreateView, UrlListView, UrlDeleteView
+
+urlpatterns = [
+    path('urls/', UrlListView.as_view(), name='url-list'),
+    path('urls/create/', UrlCreateView.as_view(), name='url-create'),
+    path('urls/delete/<int:id>/', UrlDeleteView.as_view(), name='url-delete'),
 ]

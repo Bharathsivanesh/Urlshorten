@@ -1,0 +1,12 @@
+1)python -m venv venv
+2)venv\Scripts\activate
+(the above to is suppose not alredy activated the env)
+
+Mainly starter form here
+3)pip install django
+4)django-admin startproject urlshorten
+5)cd urlshorten
+6)python manage.py runserver (smaple to run server)
+7)python manage.py startapp myapp  (here write code view,modal,etc)
+
+
